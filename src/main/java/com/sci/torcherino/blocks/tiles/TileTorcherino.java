@@ -13,6 +13,8 @@ import gregtech.api.metatileentity.SteamMetaTileEntity;
 import gregtech.api.metatileentity.TieredMetaTileEntity;
 import gregtech.api.metatileentity.multiblock.MultiblockAbility;
 import gregtech.api.metatileentity.multiblock.MultiblockControllerBase;
+import gregtech.api.metatileentity.multiblock.RecipeMapSteamMultiblockController;
+import gregtech.api.unification.material.Materials;
 import gregtech.api.util.GTUtility;
 import net.minecraft.block.Block;
 import net.minecraft.block.state.IBlockState;
@@ -107,7 +109,7 @@ public class TileTorcherino extends TileEntity implements ITickable
        if(block.hasTileEntity(this.world.getBlockState(pos)))
         {
             TileEntity tile = this.world.getTileEntity(pos);
-            if(tile == null || tile.isInvalid())
+            if(tile == null || tile.isInvalid() || tile instanceof TileTorcherino)
             {
             	return;
             }
@@ -138,11 +140,32 @@ public class TileTorcherino extends TileEntity implements ITickable
                                           inenergy.get(j).addEnergy(energys[j]-inenergy.get(j).getEnergyStored());
                                   }
                               }
+                          }else if(mte instanceof RecipeMapSteamMultiblockController)
+                          {
+                              var smte = ((RecipeMapSteamMultiblockController) mte);
+                              final var fin = smte.getSteamFluidTank();
+                              int[] energys = new int[fin.getTanks()];
+                              for (int j = 0; j < fin.getTanks(); j++) {
+                                  energys[j] = fin.getTankAt(j).getFluidAmount();
+                              }
+                              if(tile instanceof ITickable)
+                              {
+                                  ((ITickable) tile).update();
+                                  for (int j = 0; j < fin.getTanks(); j++)
+                                  {
+                                      if(fin.getTankAt(j).getFluidAmount()<energys[j])
+                                      {
+                                          fin.getTankAt(j).fill(Materials.Steam.getFluid(energys[j]-fin.getTankAt(j).getFluidAmount()),true);
+                                      }
+
+                                  }
+                              }
+                          }
+                          else
+                          {
+                              ((ITickable) tile).update();
                           }
                        }
-                    }else if(mte instanceof SteamMetaTileEntity)
-                    {
-                        return;
                     }
                     else{
                         for (EnumFacing facing : EnumFacing.VALUES) {
